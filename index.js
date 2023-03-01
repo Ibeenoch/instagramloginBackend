@@ -1,22 +1,41 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import cors from 'cors'
-import router from './route/logistic.js'
-import { Server } from 'socket.io'
-import http from 'http'
+import express from 'express';
+import cors from 'cors';
+import needle from 'needle'
 
-dotenv.config()
+const app = express();
 
-const app = express()
-const server = http.createServer(app);
-export const io = new Server(server);
+app.use(cors());
 app.use(express.json())
-app.use(express.urlencoded({extended: true}))
-app.use(cors())
+app.use(express.urlencoded({ extended: true}))
 
-app.use('/', router)
+app.post('/api', async (req, res) => {
+  //get te authorization token from the frontend
+  const token = req.body.accesstoken
 
-  // Start the server
-  app.listen(3030, () => {
-  console.log('Server started on port 3000');
+let tokenres;
+
+ const getShortToken = await needle ('post', 'https://api.instagram.com/oauth/access_token',
+ {
+    client_id: '100575559642998',
+    client_secret: '2ed05c2cf70cb1c8bc44dd2ee0d8afb5',
+    grant_type : 'authorization_code',
+    redirect_uri: 'https://localhost:3000/',
+    code: token
+  }, { multipart: true })
+ .then(async(resp)=> {
+  console.log(resp.body)
+  //get the short live token
+ tokenres=resp.body
+ console.log(tokenres)
+ }).catch((err) => {
+  console.log(err)
+ })
+
+ //send it back to the frontend
+ console.log('tokenres: ', tokenres)
+  res.json(tokenres)
   });
+
+
+
+app.listen(3030, () => console.log('Server listening on port 3030'));
